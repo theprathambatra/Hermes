@@ -1,0 +1,48 @@
+name: Import missing Hermes files
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/import-hermes-missing.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import-missing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out target repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch exact Hermes source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/NousResearch/hermes-agent.git /tmp/hermes-upstream
+          git -C /tmp/hermes-upstream checkout b359db72ee53e052a31066f9fcac2f3ba0566a49
+
+      - name: Add only files that are missing here
+        shell: bash
+        run: |
+          set -euo pipefail
+          rsync -a --ignore-existing --exclude='.git/' /tmp/hermes-upstream/ ./
+          rm -f .github/workflows/import-hermes-missing.yml
+
+      - name: Commit and push imported files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No missing files to import."
+            exit 0
+          fi
+          git commit -m "Complete Hermes source import"
+          git push origin HEAD:main
