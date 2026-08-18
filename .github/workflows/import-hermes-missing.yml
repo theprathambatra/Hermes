@@ -1,44 +1,45 @@
-name: Import missing Hermes files
+name: Replace repository with Hermes snapshot
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
-  import-missing:
+  replace-repository:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/trigger-full-hermes-import'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out target repository
+      - name: Check out target main branch
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
-      - name: Fetch exact Hermes source snapshot
+      - name: Fetch exact Hermes snapshot from uploaded ZIP source
         shell: bash
         run: |
           set -euo pipefail
           git clone --filter=blob:none --no-checkout https://github.com/NousResearch/hermes-agent.git /tmp/hermes-upstream
           git -C /tmp/hermes-upstream checkout b359db72ee53e052a31066f9fcac2f3ba0566a49
 
-      - name: Add only files that are missing here
+      - name: Delete current repository contents and copy full Hermes snapshot
         shell: bash
         run: |
           set -euo pipefail
-          rsync -a --ignore-existing --exclude='.git/' /tmp/hermes-upstream/ ./
-          rm -f .github/workflows/import-hermes-missing.yml .hermes-import-trigger
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          rsync -a --exclude='.git/' /tmp/hermes-upstream/ ./
 
-      - name: Commit and push imported files
+      - name: Commit full replacement to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then
-            echo "No missing files to import."
-            exit 0
-          fi
-          git commit -m "Complete Hermes source import"
+          git commit -m "Replace repository with full Hermes snapshot"
           git push origin HEAD:main
