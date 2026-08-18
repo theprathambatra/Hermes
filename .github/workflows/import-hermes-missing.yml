@@ -2,6 +2,8 @@ name: Replace repository with Hermes snapshot
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
   push:
     branches: [main]
   pull_request:
