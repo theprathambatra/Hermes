@@ -2,6 +2,8 @@ name: Replace repository with Hermes snapshot
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -11,7 +13,6 @@ permissions:
 
 jobs:
   replace-repository:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/trigger-full-hermes-import'
     runs-on: ubuntu-latest
     steps:
       - name: Check out target main branch
