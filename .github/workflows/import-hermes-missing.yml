@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           rsync -a --ignore-existing --exclude='.git/' /tmp/hermes-upstream/ ./
-          rm -f .github/workflows/import-hermes-missing.yml
+          rm -f .github/workflows/import-hermes-missing.yml .hermes-import-trigger
 
       - name: Commit and push imported files
         shell: bash
